@@ -1,0 +1,54 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model Usuario {
+  id           String @id @default(uuid()) @db.Uuid
+  correo       String @unique
+  passwordHash String
+  mascotas     Mascota[]
+}
+
+model Mascota {
+  id        String @id @default(uuid()) @db.Uuid
+  nombre    String
+  usuarioId String @db.Uuid
+  usuario   Usuario @relation(fields: [usuarioId], references: [id], onDelete: Restrict)
+  viajes    Viaje[]
+
+  @@index([usuarioId])
+}
+
+model Viaje {
+  id          String @id @default(uuid()) @db.Uuid
+  origen      String
+  destino     String
+  fechaSalida DateTime @db.Date
+  mascotaId   String @db.Uuid
+  mascota     Mascota @relation(fields: [mascotaId], references: [id], onDelete: Restrict)
+  tareas      Tarea[]
+
+  @@index([mascotaId])
+}
+
+enum EstadoTarea {
+  pendiente
+  completa
+  requiere_revision
+}
+
+model Tarea {
+  id          String @id @default(uuid()) @db.Uuid
+  descripcion String
+  estado      EstadoTarea @default(pendiente)
+  viajeId     String @db.Uuid
+  viaje       Viaje @relation(fields: [viajeId], references: [id], onDelete: Restrict)
+
+  @@index([viajeId])
+}

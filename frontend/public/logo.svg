@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 270 52" role="img" aria-label="Pet Travel Assistant">
+  <rect x="0" y="2" width="48" height="48" rx="14" fill="#0F766E"/>
+  <g fill="#fff"><ellipse cx="24" cy="33" rx="10" ry="8"/><ellipse cx="13" cy="23" rx="4" ry="5" transform="rotate(-25 13 23)"/><ellipse cx="22" cy="17" rx="4" ry="5"/><ellipse cx="32" cy="19" rx="4" ry="5" transform="rotate(20 32 19)"/></g>
+  <path d="M31 38q10-2 9-14" fill="none" stroke="#F59E0B" stroke-width="3" stroke-linecap="round"/>
+  <g fill="#334155" font-family="Arial,sans-serif"><text x="60" y="24" font-size="20" font-weight="700">Pet Travel</text><text x="60" y="43" font-size="16">Assistant</text></g>
+</svg>
