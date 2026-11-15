@@ -55,9 +55,13 @@ try{
 finally{
  if(mayHaveCreated){
   try{
-   await client.$transaction(async tx=>{
-    const own=await tx.usuario.findUnique({where:{correo},select:{id:true}});
-    if(!own)return;
+   // Sin transacción interactiva: el pooler (6543) cierra conexiones largas (P1017).
+   // Se borra de hojas a raíz y solo la cuenta efímera creada por esta ejecución.
+   // DIRECT_URL (sesión, 5432): el pooler de transacciones (6543) cierra la conexión (P1017).
+   const tx=new PrismaClient({datasourceUrl:process.env.DIRECT_URL||process.env.DATABASE_URL,log:[]});
+   try{
+   const own=await tx.usuario.findUnique({where:{correo},select:{id:true}});
+   if(own){
     if(usuarioId&&own.id!==usuarioId)throw new Error('La identidad de limpieza no coincide; no se borraron datos.');
     const id=own.id;
     await tx.documentoTarea.deleteMany({where:{OR:[{tarea:{viaje:{mascota:{usuarioId:id}}}},{documento:{mascota:{usuarioId:id}}}]}});
@@ -66,7 +70,8 @@ finally{
     await tx.viaje.deleteMany({where:{mascota:{usuarioId:id}}});
     await tx.mascota.deleteMany({where:{usuarioId:id}});
     await tx.usuario.deleteMany({where:{id,correo}});
-   });
+   }
+   }finally{await tx.$disconnect();}
    if(await client.usuario.count({where:{correo}}))throw new Error('Quedó la cuenta de prueba.');
    report.cleanup='Completada: se eliminó únicamente la cuenta efímera creada por esta ejecución y sus registros.';
   }catch(error){report.cleanup='Falló; revisar la cuenta de prueba creada por esta ejecución.';report.cleanupAccount={id:usuarioId??null,correo};report.cleanupError=safeError(error);process.exitCode=1;}

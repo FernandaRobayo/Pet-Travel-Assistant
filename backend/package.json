@@ -12,7 +12,8 @@
     "db:migrate:dev": "node scripts/prisma-command.mjs dev",
     "db:check": "node scripts/prisma-command.mjs check",
     "db:sql": "node scripts/generate-bootstrap.mjs",
-    "verify:runtime": "dotenv -e .env -- node scripts/verify-runtime-flow.mjs"
+    "verify:runtime": "dotenv -e .env -- node scripts/verify-runtime-flow.mjs",
+    "cleanup:verificacion": "dotenv -e .env -- node scripts/cleanup-verificacion.mjs"
   },
   "dependencies": {
     "@nestjs/common": "^11.1.0",
