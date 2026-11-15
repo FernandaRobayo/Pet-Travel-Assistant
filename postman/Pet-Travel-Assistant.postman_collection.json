@@ -1,0 +1,394 @@
+{
+  "info": {
+    "name": "Pet Travel Assistant — 8 casos API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Ejecutar en orden. Datos y credenciales efímeros se generan en memoria. 5 de 8 requests validan reglas del dominio. No exportar variables de ejecución."
+  },
+  "item": [
+    {
+      "name": "Autenticación",
+      "item": [
+        {
+          "name": "P01 ACC-001 Registro",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "noauth"
+            },
+            "url": "{{baseUrl}}/auth/register",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"correo\": \"{{correo}}\",\n  \"contrasena\": \"{{contrasena}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set('correo','postman-'+pm.variables.replaceIn('{{$randomUUID}}')+'@example.test');pm.collectionVariables.set('contrasena',pm.variables.replaceIn('{{$randomUUID}}'));",
+                  "const entropy=pm.variables.replaceIn('{{$randomUUID}}').replace(/-/g,''); pm.collectionVariables.set('contrasena',Array.from(entropy.slice(0,18),c=>String.fromCodePoint(0x1f600+parseInt(c,16))).join(''));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Código 201',()=>pm.response.to.have.status(201));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "P02 ACC-002 Login",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "noauth"
+            },
+            "url": "{{baseUrl}}/auth/login",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"correo\": \"{{correo}}\",\n  \"contrasena\": \"{{contrasena}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Código 200',()=>pm.response.to.have.status(200));",
+                  "pm.test('Token emitido',()=>pm.expect(pm.response.json().accessToken).to.be.a('string'));pm.collectionVariables.set('token',pm.response.json().accessToken);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "P03 ACC-002 Credencial incorrecta",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "noauth"
+            },
+            "url": "{{baseUrl}}/auth/login",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"correo\": \"{{correo}}\",\n  \"contrasena\": \"{{incorrecta}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set('incorrecta',pm.collectionVariables.get('contrasena')+String.fromCodePoint(0x1f680));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Código 401',()=>pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Checklist",
+      "item": [
+        {
+          "name": "P04 SEG-002 Checklist vacío",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "url": "{{baseUrl}}/viajes/{{viajeId}}/seguimiento"
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "",
+                  "function send(path,body){return new Promise((resolve,reject)=>pm.sendRequest({url:pm.environment.get('baseUrl')+path,method:'POST',header:{'Content-Type':'application/json','Authorization':'Bearer '+pm.collectionVariables.get('token')},body:{mode:'raw',raw:JSON.stringify(body)}},(error,response)=>{if(error||response.code>=400)return reject(new Error('No se pudo preparar el caso API.'));resolve(response.json());}));}",
+                  "(async()=>{const pet=await send('/mascotas',{nombre:'Luna Postman'});pm.collectionVariables.set('mascotaId',pet.id);const trip=await send('/viajes',{origen:'Neiva',destino:'Bogotá',fechaSalida:'2027-02-01',mascotaId:pet.id});pm.collectionVariables.set('viajeId',trip.id);})().catch(e=>{throw e;});"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Código 200',()=>pm.response.to.have.status(200));",
+                  "pm.test('Sin elementos y sin porcentaje',()=>{const result=pm.response.json();pm.expect(result.progreso).to.eql(null);pm.expect(result.estadoGeneral).to.eql('Sin elementos');});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "P05 CHK-001 Tarea nueva pendiente",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "url": "{{baseUrl}}/viajes/{{viajeId}}/tareas",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"descripcion\": \"Preparar documentación\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Código 201',()=>pm.response.to.have.status(201));",
+                  "pm.test('Nace pendiente',()=>pm.expect(pm.response.json().estado).to.eql('pendiente'));pm.collectionVariables.set('tareaId',pm.response.json().id);"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Seguimiento",
+      "item": [
+        {
+          "name": "P06 SEG-005 Vencido vinculado",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "url": "{{baseUrl}}/viajes/{{viajeId}}/seguimiento"
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "",
+                  "function send(path,body){return new Promise((resolve,reject)=>pm.sendRequest({url:pm.environment.get('baseUrl')+path,method:'POST',header:{'Content-Type':'application/json','Authorization':'Bearer '+pm.collectionVariables.get('token')},body:{mode:'raw',raw:JSON.stringify(body)}},(error,response)=>{if(error||response.code>=400)return reject(new Error('No se pudo preparar el caso API.'));resolve(response.json());}));}",
+                  "(async()=>{const doc=await send('/mascotas/'+pm.collectionVariables.get('mascotaId')+'/documentos',{identificacion:'Certificado vencido',vigencia:'fecha',fechaVencimiento:'2027-01-31'});await send('/tareas/'+pm.collectionVariables.get('tareaId')+'/documentos',{documentoId:doc.id});})().catch(e=>{throw e;});"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Código 200',()=>pm.response.to.have.status(200));",
+                  "pm.test('Advertencia con motivo',()=>{const r=pm.response.json();pm.expect(r.advertencias).to.have.lengthOf(1);pm.expect(r.advertencias[0].motivo).to.include('antes');pm.expect(r.estadoGeneral).to.eql('Requiere revisión');});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "P07 SEG-005 Igualdad requiere revisión",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "url": "{{baseUrl}}/viajes/{{igualViajeId}}/seguimiento"
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "",
+                  "function send(path,body){return new Promise((resolve,reject)=>pm.sendRequest({url:pm.environment.get('baseUrl')+path,method:'POST',header:{'Content-Type':'application/json','Authorization':'Bearer '+pm.collectionVariables.get('token')},body:{mode:'raw',raw:JSON.stringify(body)}},(error,response)=>{if(error||response.code>=400)return reject(new Error('No se pudo preparar el caso API.'));resolve(response.json());}));}",
+                  "(async()=>{const trip=await send('/viajes',{origen:'Neiva',destino:'Bogotá',fechaSalida:'2027-02-01',mascotaId:pm.collectionVariables.get('mascotaId')});pm.collectionVariables.set('igualViajeId',trip.id);const task=await send('/viajes/'+trip.id+'/tareas',{descripcion:'Verificar vigencia'});const doc=await send('/mascotas/'+pm.collectionVariables.get('mascotaId')+'/documentos',{identificacion:'Documento al límite',vigencia:'fecha',fechaVencimiento:'2027-02-01'});await send('/tareas/'+task.id+'/documentos',{documentoId:doc.id});})().catch(e=>{throw e;});"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Código 200',()=>pm.response.to.have.status(200));",
+                  "pm.test('Revisión sin advertencia de fecha',()=>{const r=pm.response.json();pm.expect(r.advertencias).to.have.lengthOf(0);pm.expect(r.revisiones).to.have.lengthOf(1);pm.expect(r.estadoGeneral).to.eql('Requiere revisión');});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Documentos",
+      "item": [
+        {
+          "name": "P08 DOC-005 Rechazar otra mascota",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "url": "{{baseUrl}}/tareas/{{tareaId}}/documentos",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"documentoId\": \"{{otroDocumentoId}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "",
+                  "function send(path,body){return new Promise((resolve,reject)=>pm.sendRequest({url:pm.environment.get('baseUrl')+path,method:'POST',header:{'Content-Type':'application/json','Authorization':'Bearer '+pm.collectionVariables.get('token')},body:{mode:'raw',raw:JSON.stringify(body)}},(error,response)=>{if(error||response.code>=400)return reject(new Error('No se pudo preparar el caso API.'));resolve(response.json());}));}",
+                  "(async()=>{const pet=await send('/mascotas',{nombre:'Otra mascota'});const doc=await send('/mascotas/'+pet.id+'/documentos',{identificacion:'Ajeno a mascota del viaje',vigencia:'sin_vencimiento'});pm.collectionVariables.set('otroDocumentoId',doc.id);})().catch(e=>{throw e;});"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Código 400',()=>pm.response.to.have.status(400));",
+                  "pm.test('Explica la restricción',()=>pm.expect(pm.response.json().message).to.include('misma mascota'));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,41 @@
+{
+  "name": "pet-travel-assistant",
+  "version": "0.1.0",
+  "private": true,
+  "workspaces": [
+    "frontend",
+    "backend"
+  ],
+  "scripts": {
+    "dev": "concurrently -k -n api,web \"npm run dev -w backend\" \"npm run dev -w frontend\"",
+    "build": "npm run build:apps",
+    "build:apps": "npm run db:generate && npm run build -w backend && npm run build -w frontend",
+    "typecheck": "npm run typecheck --workspaces",
+    "db:generate": "npm run db:generate -w backend",
+    "db:migrate": "npm run db:migrate -w backend",
+    "db:migrate:dev": "npm run db:migrate:dev -w backend",
+    "db:check": "npm run db:check -w backend",
+    "db:sql": "npm run db:sql -w backend",
+    "verify:supabase": "npm run build -w backend && npm run verify:runtime -w backend",
+    "test:unit": "vitest run --config backend/vitest.config.ts",
+    "test:front": "vitest run --config frontend/vitest.config.ts",
+    "test:e2e": "playwright test",
+    "test:api": "newman run postman/Pet-Travel-Assistant.postman_collection.json -e postman/local.postman_environment.json",
+    "test:all": "npm run test:unit && npm run test:front && npm run test:api && npm run test:e2e",
+    "test:local": "npm run build && node e2e/run-local.mjs"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.65.1",
+    "@testing-library/jest-dom": "^7.0.1",
+    "@testing-library/react": "^16.3.3",
+    "@testing-library/user-event": "^14.6.10",
+    "concurrently": "^9.2.1",
+    "jsdom": "^29.1.1",
+    "newman": "^6.2.3",
+    "typescript": "^5.9.3",
+    "vitest": "^5.1.0"
+  },
+  "engines": {
+    "node": ">=22.12"
+  }
+}

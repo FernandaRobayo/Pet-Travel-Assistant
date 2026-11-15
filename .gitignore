@@ -1,0 +1,36 @@
+# Secrets and machine-specific environment
+.env
+.env.*
+!.env.example
+**/.env
+**/.env.*
+!**/.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+
+# Dependencies, builds and caches
+node_modules/
+.next/
+dist/
+build/
+coverage/
+*.tsbuildinfo
+.turbo/
+.cache/
+
+# Generated test reports and heavy traces
+playwright-report/
+test-results/
+blob-report/
+*.trace.zip
+*.inspect.ndjson
+*.log
+
+# Temporary local files
+tmp/
+temp/
+~$*
+.DS_Store
+Thumbs.db
