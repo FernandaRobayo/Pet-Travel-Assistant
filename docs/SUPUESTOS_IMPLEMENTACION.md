@@ -7,6 +7,7 @@ Decisiones actualizadas por el usuario. Este documento sustituye las propuestas 
 - Supuesto: contraseña mínima de 8 caracteres y máxima de 72 bytes UTF-8 por límite de bcrypt. No está definido en el alcance actual. Correo se normaliza con trim y minúsculas. La contraseña no se recorta, guarda ni imprime como texto plano.
 - Identificación de documento: Supuesto: un único campo de texto. No está definido en el alcance actual.
 - Fechas: Supuesto: fechas de calendario YYYY-MM-DD sin hora ni conversión de zona. No está definido en el alcance actual el tratamiento técnico de zonas.
+- Supuesto: mostrar una sola advertencia por documento aunque esté vinculado a varias tareas del viaje. No está definido en el alcance actual el tratamiento de avisos duplicados; no se altera la evaluación de vigencia ni el estado de las tareas.
 
 `DATABASE_URL` corresponde al pooler de Supabase para ejecución; `DIRECT_URL` a la conexión de migraciones. Se configuran únicamente en `backend/.env`, junto con `JWT_SECRET`. NestJS y los comandos Prisma cargan esa ubicación; el frontend no recibe esas variables. Solo NestJS usa Prisma; el frontend llama únicamente a su API. `npm run db:check` verifica ambas conexiones sin mostrar sus valores. `npm run db:migrate:dev` invoca Prisma Migrate Dev sin aceptar reset ni pérdida de datos.
 

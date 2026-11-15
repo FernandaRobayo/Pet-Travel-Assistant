@@ -1,27 +1,19 @@
 # Estado del desarrollo
 
-La base y las funcionalidades comunes a las dos alternativas están implementadas: registro, login, rutas protegidas, mascotas, viajes y checklist con sus tres estados. La API y la interfaz usan NestJS, Prisma, PostgreSQL y Next.js con componentes originales de TailAdmin.
+El flujo completo está implementado y verificado: registro/login, mascota, viaje, tareas, documentos con las tres modalidades de vigencia, vínculo y seguimiento con progreso, advertencias y estado general. Se aplica el alcance de 15 SWR de `ALCANCE_MVP.md`.
 
-La selección de requisitos sigue pendiente: el usuario solicita a la vez flujo completo con documentos/seguimiento y no exceder los 15 SWR. La alternativa documentada de 15 IDs comprende ACC-001/002/003, MAS-001/002/003, VIA-001/002/003/004/005 y CHK-001/002/004/005. No incluye documentos ni seguimiento; la propuesta completa abarca 40 IDs. No se incorporan estos módulos hasta aclarar ese límite.
+Backend NestJS con Prisma y PostgreSQL; frontend Next.js con TailAdmin; JWT Bearer sin cookies. Las reglas puras están en `backend/src/domain/seguimiento.ts`. La API aplica aislamiento por usuario y rechaza vínculos entre mascotas distintas con 400; un documento fuera de la cuenta no se puede vincular y devuelve 403.
 
-Las matrices de la Fase 1 son borradores. Las decisiones de sesión Bearer y redondeo entero de `SUPUESTOS_IMPLEMENTACION.md` sustituyen las propuestas anteriores. La Fase 4 y los entregables finales aún no se han ejecutado ni se consideran terminados.
+La ejecución integrada final sobre PostgreSQL 16 temporal pasó 8 unitarias, 12 RTL, 8 casos Postman (14 assertions) y 5 Playwright. Hay tres flujos E2E desde login hasta estado general y verificación a 1440 y 390 px. El reporte HTML se genera en `playwright-report/`; las trazas se conservan en fallos. La primera ejecución detectó dos locators ambiguos; se corrigieron y la ejecución final pasó 5/5.
 
-La conexión real de Supabase no está configurada en este entorno. Las comprobaciones de integración se realizan contra PostgreSQL temporal, sin reutilizar credenciales ni datos reales.
+Postman realiza 8 requests principales y 10 auxiliares para preparar datos; estos últimos no se cuentan como casos adicionales. Las credenciales se generan en memoria, no tienen valores predeterminados y no se exportan. El JSON de resultados conserva solo los resultados y el entorno. Se ejecutaron typecheck y builds de producción. Los procesos y el contenedor temporales se detuvieron al terminar.
 
-## Verificaciones realizadas
+## Supabase
 
-- `npm run typecheck`: frontend y backend sin errores.
-- Compilación de producción Next.js y compilación TypeScript de NestJS: correctas.
-- Migraciones versionadas aplicadas a PostgreSQL 16 temporal; contenedor eliminado tras comprobarlas.
-- Smoke de API: registro, duplicado, login correcto e incorrecto, ruta sin Bearer, mascota, viaje, tarea inicialmente pendiente, cambio de estado y aislamiento entre dos cuentas, incluidas lectura de viaje y modificación de tarea por ID ajeno.
-- Smoke automatizado de navegador en Chrome: redirección sin sesión; login; registrar mascota; crear viaje; agregar tarea; pasar a completa. Sin cookies y sin desbordamiento horizontal a 1440 y 390 píxeles.
+`backend/.env` ya está presente y excluido por Git. No se abrió ni imprimió su contenido. Se intentaron `migrate deploy` y la comprobación de conexión con salida protegida. La última clasificación fue `DB_CONNECTION`: no se confirmó conectividad. Las suites aprobadas corresponden a PostgreSQL temporal, no al destino Supabase del equipo.
 
-Los datos, contraseñas y secreto JWT de la comprobación se generaron en memoria. No se incorporan al repositorio ni se proporcionan como credenciales predeterminadas. Los servicios y el contenedor temporales se detuvieron al terminar. Esto no verifica todavía la conexión Supabase del equipo ni sustituye las suites y cantidades exigidas en Fase 4.
+No se modificó ni incorporó el archivo local `backend/schema.sql`, que apareció durante el trabajo. El esquema utilizado es `backend/prisma/schema.prisma` con sus migraciones.
 
-## Configuración de Supabase solicitada
+## Trabajo manual
 
-La carga del entorno se corrigió para `backend/.env`; los ejemplos raíz y backend contienen únicamente nombres de variables y valores vacíos. `.env` y `backend/.env` están ignorados por Git.
-
-En la última comprobación de existencia, `backend/.env` no estaba presente en este checkout. No se leyó ni mostró contenido de secretos. `db:check` y `db:migrate:dev` se detuvieron por falta de configuración; no hay una conexión Supabase confirmada ni una migración ejecutada en ese destino.
-
-Los scripts nuevos `db:check`, `db:migrate` y `db:migrate:dev` sí se comprobaron con PostgreSQL temporal, proporcionando credenciales efímeras al proceso. Tras el cambio de carga del entorno se repitieron correctamente la compilación del backend, el chequeo de tipos y el smoke de API/navegador del recorrido disponible. La Fase 4 permanece pendiente.
+El equipo debe ejecutar los 10 casos de caja negra, completar la sesión exploratoria y tomar capturas de TailAdmin original y aplicación final. Las celdas manuales permanecen en blanco. ISO 25010 incluye mecanismos y rutas reales, con límites de evidencia; no constituye certificación ni la matriz 15.2 excluida.
