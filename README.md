@@ -46,7 +46,9 @@ Web: http://127.0.0.1:3000. API: http://127.0.0.1:3001. No se crean usuarios pre
 
 Para cambiar orígenes: `FRONTEND_ORIGIN` y `PORT` pertenecen al entorno backend; `NEXT_PUBLIC_API_URL` a `frontend/.env.local` y se aplica al compilar Next.js. NestJS carga `backend/.env`; el frontend no recibe las variables de conexión ni el secreto JWT.
 
-La comprobación con la nueva configuración no conectó: Prisma informó `Can't reach database server at aws-0-us-east-2.pooler.supabase.com:6543`. DNS y TCP funcionan; una prueba TLS con validación de certificados devolvió `SELF_SIGNED_CERT_IN_CHAIN`. La cadena TLS es una causa probable, no demostrada como causa única del error de Prisma. No se afirma que la contraseña sea incorrecta ni se desactiva la validación TLS. Véase [verificación Supabase](docs/VERIFICACION_SUPABASE.md).
+Supuesto: `sslaccept=accept_invalid_certs` se permite únicamente para desarrollo local por autorización del equipo. Omite la validación del certificado del servidor; en producción debe usarse validación de certificado con la CA oficial y los parámetros correspondientes del cliente. Este ajuste no debe trasladarse a producción.
+
+La comprobación del 15 de noviembre de 2026 no conectó ni con `sslaccept=accept_invalid_certs` ni con la alternativa `sslmode=require`: Prisma informó `Can't reach database server at aws-0-us-east-2.pooler.supabase.com:6543` en ambos casos. La configuración local final conserva `sslaccept=accept_invalid_certs` en ambas URLs y `pgbouncer=true` en DATABASE_URL. El usuario y los puertos son correctos; las contraseñas no contienen corchetes ni caracteres reservados sin codificar detectados. Esto no confirma que las contraseñas sean válidas en Supabase. La comparación con la terminal del equipo está pendiente. Véase [verificación Supabase](docs/VERIFICACION_SUPABASE.md).
 
 Para repetir conexión y recorrido real después de corregir el acceso:
 
