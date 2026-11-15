@@ -27,6 +27,11 @@ export class AuthService {
   }
 
   async login(input: AuthDto) {
+    // bcrypt truncates beyond 72 bytes; reject an overlong login rather than
+    // accepting a different password with the same first 72 bytes.
+    if (Buffer.byteLength(input.contrasena, 'utf8') > 72) {
+      throw new UnauthorizedException('Correo o contraseña incorrectos.');
+    }
     const user = await this.prisma.usuario.findUnique({where: {correo: input.correo}});
     if (!user || !(await compare(input.contrasena, user.passwordHash))) {
       throw new UnauthorizedException('Correo o contraseña incorrectos.');

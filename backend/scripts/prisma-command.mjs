@@ -31,7 +31,7 @@ let missingConfiguration = false;
 let shadowDatabaseFailure = false;
 const collect = chunk => {
   const text = chunk.toString();
-  errorCode ||= text.match(/\bP\d{4}\b/)?.[0] || '';
+  errorCode ||= text.match(/\b(?:P\d{4}|DB_(?:TENANT|AUTH|TLS|CONNECTION|CONFIGURATION))\b/)?.[0] || '';
   missingConfiguration ||= /Falta configuración|Environment variable not found/.test(text);
   shadowDatabaseFailure ||= /P3014|shadow database/i.test(text);
 };
