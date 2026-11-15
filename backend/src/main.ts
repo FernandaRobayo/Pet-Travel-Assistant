@@ -5,7 +5,8 @@ import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { AppModule } from './app.module';
 
-config({path: resolve(__dirname, '../../.env'), quiet: true});
+// Load the backend-only environment in both src/ and compiled dist/ execution.
+config({path: resolve(__dirname, '../.env'), quiet: true});
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, {logger: ['error', 'warn']});

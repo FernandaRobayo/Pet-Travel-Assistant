@@ -4,12 +4,14 @@
   "private": true,
   "workspaces": ["frontend", "backend"],
   "scripts": {
-    "dev": "dotenv -e .env -- concurrently -k -n api,web \"npm run dev -w backend\" \"npm run dev -w frontend\"",
-    "build": "dotenv -e .env -- npm run build:apps",
+    "dev": "concurrently -k -n api,web \"npm run dev -w backend\" \"npm run dev -w frontend\"",
+    "build": "npm run build:apps",
     "build:apps": "npm run db:generate && npm run build -w backend && npm run build -w frontend",
     "typecheck": "npm run typecheck --workspaces",
     "db:generate": "npm run db:generate -w backend",
-    "db:migrate": "npm run db:migrate -w backend"
+    "db:migrate": "npm run db:migrate -w backend",
+    "db:migrate:dev": "npm run db:migrate:dev -w backend",
+    "db:check": "npm run db:check -w backend"
   },
   "devDependencies": {
     "concurrently": "^9.2.1",

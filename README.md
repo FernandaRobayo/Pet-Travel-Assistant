@@ -10,20 +10,23 @@ Requiere Node.js 22.12 o superior y npm. Desde la raíz:
 
 ```powershell
 npm ci
-Copy-Item .env.example .env
+Copy-Item backend/.env.example backend/.env
 ```
 
-Completa `.env` localmente con `DATABASE_URL` del pooler de tu proyecto Supabase, `DIRECT_URL` para migraciones y un `JWT_SECRET` aleatorio de al menos 32 bytes. No compartas ni subas esos valores. Las URLs se obtienen de la configuración del propio proyecto Supabase, con su contraseña codificada como URL cuando corresponda. No hay credenciales predeterminadas.
+Completa `backend/.env` localmente con `DATABASE_URL` del pooler de tu proyecto Supabase, `DIRECT_URL` para migraciones y un `JWT_SECRET` aleatorio de al menos 32 bytes. No compartas ni subas esos valores. Las URLs se obtienen de la configuración del propio proyecto Supabase, con su contraseña codificada como URL cuando corresponda. No hay credenciales predeterminadas. No sobrescribas el archivo si ya lo configuraste.
 
-`FRONTEND_ORIGIN` y `NEXT_PUBLIC_API_URL` deben coincidir con los orígenes de web y API; en desarrollo son `http://127.0.0.1:3000` y `http://127.0.0.1:3001`. `PORT=3001` corresponde a NestJS. El script raíz carga `.env` en ambos procesos.
+Los valores predeterminados son web `http://127.0.0.1:3000` y API `http://127.0.0.1:3001`. Si los cambias, configura `FRONTEND_ORIGIN` y `PORT` en el entorno del backend y `NEXT_PUBLIC_API_URL` en `frontend/.env.local`; este último se aplica al compilar Next.js. NestJS carga `backend/.env`. El frontend no recibe las variables de conexión ni el secreto JWT.
 
 ```powershell
 npm run db:generate
+npm run db:check
 npm run db:migrate
 npm run dev
 ```
 
 Abre http://127.0.0.1:3000. `db:migrate` aplica las migraciones versionadas al destino de `DIRECT_URL`; revisa que corresponda al entorno de desarrollo antes de ejecutarlo.
+
+Para crear/aplicar migraciones durante desarrollo, el comando solicitado es `npm run db:migrate:dev` (`prisma migrate dev`). Puede necesitar permisos o una base shadow adicional en Supabase. Los scripts no envían confirmación de reset ni de pérdida de datos y no muestran salida con detalles de conexión. `db:check` comprueba pooler y conexión de migraciones con `SELECT 1`, sin mostrar URLs ni secretos.
 
 ## Recorrido disponible
 
