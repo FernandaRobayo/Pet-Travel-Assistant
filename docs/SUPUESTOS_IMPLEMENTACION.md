@@ -9,7 +9,7 @@ Decisiones actualizadas por el usuario. Este documento sustituye las propuestas 
 - Fechas: Supuesto: fechas de calendario YYYY-MM-DD sin hora ni conversión de zona. No está definido en el alcance actual el tratamiento técnico de zonas.
 - Supuesto: mostrar una sola advertencia por documento aunque esté vinculado a varias tareas del viaje. No está definido en el alcance actual el tratamiento de avisos duplicados; no se altera la evaluación de vigencia ni el estado de las tareas.
 
-`DATABASE_URL` corresponde al pooler de Supabase para ejecución; `DIRECT_URL` a la conexión de migraciones. Se configuran únicamente en `backend/.env`, junto con `JWT_SECRET`. NestJS y los comandos Prisma cargan esa ubicación; el frontend no recibe esas variables. Solo NestJS usa Prisma; el frontend llama únicamente a su API. `npm run db:check` verifica ambas conexiones sin mostrar sus valores. `npm run db:migrate:dev` invoca Prisma Migrate Dev sin aceptar reset ni pérdida de datos.
+`DATABASE_URL` corresponde al pooler de Supabase para ejecución; `DIRECT_URL` queda como referencia de conexión directa. Se configuran en `backend/.env`, junto con `JWT_SECRET`, y no se exponen al frontend. `npm run db:check` verifica exclusivamente DATABASE_URL y redacta credenciales en los errores. Las tablas reales ya se crearon mediante SQL generado por migrate diff y SQL Editor; no se ejecutan migrate deploy/dev sobre esa Supabase. Los comandos de migración quedan restringidos a la base temporal local del runner.
 
 Plantilla gratuita TailAdmin, licencia MIT. Versión declarada 2.5.0; changelog 2.5.1; commit fijo `b1676038f01bd31c97d0b658eea29573ca5cdcd8`. Referencia: https://github.com/TailAdmin/free-nextjs-admin-dashboard/tree/b1676038f01bd31c97d0b658eea29573ca5cdcd8
 

@@ -10,7 +10,9 @@
     "db:generate": "prisma generate",
     "db:migrate": "node scripts/prisma-command.mjs deploy",
     "db:migrate:dev": "node scripts/prisma-command.mjs dev",
-    "db:check": "node scripts/prisma-command.mjs check"
+    "db:check": "node scripts/prisma-command.mjs check",
+    "db:sql": "node scripts/generate-bootstrap.mjs",
+    "verify:runtime": "dotenv -e .env -- node scripts/verify-runtime-flow.mjs"
   },
   "dependencies": {
     "@nestjs/common": "^11.1.0",

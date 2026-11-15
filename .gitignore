@@ -7,6 +7,8 @@
 !**/.env.example
 *.pem
 *.key
+*.p12
+*.pfx
 
 # Dependencies, builds and caches
 node_modules/

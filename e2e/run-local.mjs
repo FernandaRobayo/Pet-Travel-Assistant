@@ -11,7 +11,7 @@ const name='pta-tests-'+randomBytes(4).toString('hex');
 const password=randomBytes(24).toString('hex');
 const secret=randomBytes(48).toString('hex');
 const url=`postgresql://postgres:${password}@127.0.0.1:55439/pta_tests`;
-const env={...process.env,DATABASE_URL:url,DIRECT_URL:url,JWT_SECRET:secret,POSTGRES_PASSWORD:password,PORT:'3001',FRONTEND_ORIGIN:'http://127.0.0.1:3000'};
+const env={...process.env,DATABASE_URL:url,DIRECT_URL:url,JWT_SECRET:secret,POSTGRES_PASSWORD:password,PTA_MIGRATION_TARGET:'temporary',PORT:'3001',FRONTEND_ORIGIN:'http://127.0.0.1:3000'};
 const results={database:'PostgreSQL 16 efímero; no Supabase',unitarias:'Pendiente',rtl:'Pendiente',postman:'Pendiente',playwright:'Pendiente'};
 const children=[];let started=false;
 let suite;

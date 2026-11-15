@@ -14,21 +14,47 @@ if (-not (Test-Path backend/.env)) { Copy-Item backend/.env.example backend/.env
 npm run db:generate
 ```
 
-Completa `backend/.env` en tu editor con `DATABASE_URL` del pooler Supabase, `DIRECT_URL` para migraciones y `JWT_SECRET` aleatorio de al menos 32 bytes. No hay valores predeterminados de contraseña o token. No sobrescribas un archivo ya configurado ni compartas sus valores. `.env` está ignorado por Git.
+La app usa Supabase real. Completa `backend/.env` en tu editor con `DATABASE_URL` del pooler Supabase, `DIRECT_URL` como referencia de conexión directa y `JWT_SECRET` aleatorio de al menos 32 bytes. No hay valores predeterminados de contraseña o token. No sobrescribas un archivo ya configurado ni compartas sus valores. `.env` está ignorado por Git.
 
 ```powershell
 npm run db:check
-npm run db:migrate
 npm run dev
 ```
 
-`db:check` verifica pooler y conexión de migraciones sin mostrar URLs ni secretos. `db:migrate` ejecuta `prisma migrate deploy`, aplicando las migraciones versionadas. `db:migrate:dev` está disponible para crear migraciones en desarrollo; puede necesitar una base shadow. Ningún script acepta automáticamente reset o pérdida de datos.
+`db:check` consulta SELECT 1 exclusivamente mediante `DATABASE_URL`, la misma fuente que usa la API. No contacta `DIRECT_URL`. Si falla, informa la excepción original con credenciales y URLs sensibles redactadas.
+
+Las tablas existentes en Supabase fueron creadas por el equipo con SQL generado mediante `prisma migrate diff` y ejecutado en SQL Editor. **No ejecutar `migrate deploy` ni `migrate dev` contra esa base.** La inicialización SQL no registra automáticamente `_prisma_migrations`. Los comandos de migración se bloquean para destinos reales y se reservan al runner con PostgreSQL local efímero.
+
+## Reproducir el esquema en una base nueva
+
+Solo para una base **nueva y vacía**, nunca para volver a inicializar la Supabase existente:
+
+1. Instalar con `npm ci` y generar Prisma Client con `npm run db:generate`.
+2. Ejecutar `npm run db:sql`. Genera `backend/prisma/bootstrap.sql` sin conectarse a ninguna base. Internamente usa, desde `backend/`:
+
+   ```powershell
+   npx prisma migrate diff --from-empty --to-schema-datamodel prisma/schema.prisma --script --output prisma/bootstrap.sql
+   ```
+
+3. El generador añade el CHECK de vigencia documental que el datamodel de Prisma no representa. Revisar el archivo completo.
+4. En SQL Editor del proyecto Supabase nuevo, pegar `backend/prisma/bootstrap.sql` y ejecutarlo una vez. Crea tablas, enums, índices y relaciones; no incluye datos, usuarios ni credenciales.
+5. Configurar `backend/.env`, comprobar `npm run db:check` e iniciar `npm run dev`. No aplicar migrate deploy/dev sobre esa inicialización SQL.
+
+El archivo local `backend/schema.sql` del equipo se conserva intacto. La reproducción versionada es `backend/prisma/bootstrap.sql` y su generador.
 
 Web: http://127.0.0.1:3000. API: http://127.0.0.1:3001. No se crean usuarios predeterminados.
 
 Para cambiar orígenes: `FRONTEND_ORIGIN` y `PORT` pertenecen al entorno backend; `NEXT_PUBLIC_API_URL` a `frontend/.env.local` y se aplica al compilar Next.js. NestJS carga `backend/.env`; el frontend no recibe las variables de conexión ni el secreto JWT.
 
-La comprobación de Supabase durante esta entrega no finalizó correctamente. No se afirma conexión ni migración exitosa allí. Las verificaciones funcionales y las suites aprobadas se ejecutaron en PostgreSQL temporal. Véase [estado de desarrollo](docs/ESTADO_DESARROLLO.md).
+La comprobación con la nueva configuración no conectó: Prisma informó `Can't reach database server at aws-0-us-east-2.pooler.supabase.com:6543`. DNS y TCP funcionan; una prueba TLS con validación de certificados devolvió `SELF_SIGNED_CERT_IN_CHAIN`. La cadena TLS es una causa probable, no demostrada como causa única del error de Prisma. No se afirma que la contraseña sea incorrecta ni se desactiva la validación TLS. Véase [verificación Supabase](docs/VERIFICACION_SUPABASE.md).
+
+Para repetir conexión y recorrido real después de corregir el acceso:
+
+```powershell
+npm run verify:supabase
+```
+
+No ejecuta DDL ni migraciones. Si conecta, levanta una API propia en un puerto libre, crea una cuenta única y ejecuta registro → login → mascota → viaje → tarea → documento → vínculo → seguimiento completo. Al terminar elimina solo esa cuenta y sus registros, por propietario y en una transacción. Si falla antes de crear datos, lo informa. No imprime contraseñas, tokens ni respuestas HTTP crudas. La ejecución actual no creó datos porque no conectó.
 
 ## Probar el flujo desde la interfaz
 
@@ -89,6 +115,8 @@ Postman efectúa 10 llamadas auxiliares de preparación además de los 8 request
 El reporte HTML de Playwright queda en `playwright-report/index.html` y se abre con `npx playwright show-report`. Las trazas y capturas se conservan solo en fallos, en `test-results/`. No se versionan por tamaño y posible contenido de sesión. La ejecución final no deja trazas de fallo. La configuración permite conservarlas en fallos futuros; no las compartas sin depurar.
 
 Explicaciones: [8 unitarias](docs/calidad/06_Pruebas_Unitarias/Guia.md), [3 bloques de caja blanca](docs/calidad/07_Caja_Blanca/Analisis.md), [3 RTL línea por línea](docs/calidad/08_RTL/Explicacion.md), [8 Postman](docs/calidad/09_Postman/Guia.md) y [2 E2E a nivel de código](docs/calidad/10_Playwright/Explicacion.md).
+
+Lista de acciones manuales, capturas y temas para estudiar: [pendientes del equipo](docs/PENDIENTES_EQUIPO.md).
 
 ## Documentación y trabajo manual pendiente
 

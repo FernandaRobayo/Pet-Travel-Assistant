@@ -10,7 +10,9 @@ Postman realiza 8 requests principales y 10 auxiliares para preparar datos; esto
 
 ## Supabase
 
-`backend/.env` ya está presente y excluido por Git. No se abrió ni imprimió su contenido. Se intentaron `migrate deploy` y la comprobación de conexión con salida protegida. La última clasificación fue `DB_CONNECTION`: no se confirmó conectividad. Las suites aprobadas corresponden a PostgreSQL temporal, no al destino Supabase del equipo.
+`backend/.env` está presente y excluido por Git. No se abrió para inspección ni imprimió su contenido. En la verificación actual no se ejecutaron migrate deploy/dev contra Supabase: el equipo ya creó las tablas en SQL Editor con el SQL de migrate diff. El SELECT 1 mediante DATABASE_URL falló con `Can't reach database server`; DNS y TCP respondieron y la prueba TLS indicó `SELF_SIGNED_CERT_IN_CHAIN`. Véase `VERIFICACION_SUPABASE.md`. Las suites aprobadas corresponden a PostgreSQL temporal.
+
+El verificador real se detuvo antes de crear datos. El mismo script y su limpieza se probaron en una base temporal inicializada con el nuevo bootstrap SQL; completó el recorrido, eliminó su cuenta y registros y preservó una cuenta y mascota de control.
 
 No se modificó ni incorporó el archivo local `backend/schema.sql`, que apareció durante el trabajo. El esquema utilizado es `backend/prisma/schema.prisma` con sus migraciones.
 
