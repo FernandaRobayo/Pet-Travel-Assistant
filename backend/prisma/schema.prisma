@@ -9,33 +9,106 @@ datasource db {
 }
 
 model Usuario {
-  id           String @id @default(uuid()) @db.Uuid
-  correo       String @unique
-  passwordHash String
-  mascotas     Mascota[]
+  id               String    @id @default(uuid()) @db.Uuid
+  correo           String    @unique
+  passwordHash     String
+  // Incremento 2 (SWR-ACC-004): hash del código de recuperación entregado al registrarse.
+  recuperacionHash String?
+  mascotas         Mascota[]
 }
 
 model Mascota {
-  id        String @id @default(uuid()) @db.Uuid
-  nombre    String
-  usuarioId String @db.Uuid
-  usuario   Usuario @relation(fields: [usuarioId], references: [id], onDelete: Restrict)
-  viajes    Viaje[]
-  documentos Documento[]
+  id                  String      @id @default(uuid()) @db.Uuid
+  nombre              String
+  // Incremento 2 (SWR-MAS-005..010): datos opcionales, todos en texto/número simple.
+  especie             String?
+  raza                String?
+  edad                Int?
+  peso                Float?
+  notas               String?
+  veterinarioNombre   String?
+  veterinarioTelefono String?
+  contactoEmergencia  String?
+  medicacion          String?
+  usuarioId           String      @db.Uuid
+  usuario             Usuario     @relation(fields: [usuarioId], references: [id], onDelete: Restrict)
+  viajes              Viaje[]
+  documentos          Documento[]
+  foto                FotoMascota?
 
   @@index([usuarioId])
 }
 
+// Incremento 2 (SWR-MAS-007, SWR-DATA-006): una foto por mascota, guardada en la base.
+model FotoMascota {
+  mascotaId String  @id @db.Uuid
+  nombre    String
+  tipo      String
+  datos     Bytes
+  mascota   Mascota @relation(fields: [mascotaId], references: [id], onDelete: Cascade)
+}
+
+enum Transporte {
+  avion
+  bus
+  carro
+  otro
+}
+
+enum EtapaViaje {
+  planificado
+  en_preparacion
+  en_curso
+  finalizado
+}
+
 model Viaje {
-  id          String @id @default(uuid()) @db.Uuid
-  origen      String
-  destino     String
-  fechaSalida DateTime @db.Date
-  mascotaId   String @db.Uuid
-  mascota     Mascota @relation(fields: [mascotaId], references: [id], onDelete: Restrict)
-  tareas      Tarea[]
+  id                      String      @id @default(uuid()) @db.Uuid
+  origen                  String
+  destino                 String
+  fechaSalida             DateTime    @db.Date
+  // Incremento 2 (SWR-VIA-007..013)
+  transporte              Transporte?
+  aerolinea               String?
+  numeroVuelo             String?
+  horaSalida              String?
+  aeropuerto              String?
+  alojamientoNombre       String?
+  alojamientoDireccion    String?
+  alojamientoConfirmacion String?
+  etapa                   EtapaViaje  @default(planificado)
+  archivado               Boolean     @default(false)
+  mascotaId               String      @db.Uuid
+  mascota                 Mascota     @relation(fields: [mascotaId], references: [id], onDelete: Restrict)
+  tareas                  Tarea[]
+  tramos                  Tramo[]
+  reglas                  ReglasViaje?
 
   @@index([mascotaId])
+}
+
+// Incremento 2 (SWR-VIA-010): tramos adicionales del viaje.
+model Tramo {
+  id      String   @id @default(uuid()) @db.Uuid
+  viajeId String   @db.Uuid
+  origen  String
+  destino String
+  fecha   DateTime @db.Date
+  orden   Int      @default(0)
+  viaje   Viaje    @relation(fields: [viajeId], references: [id], onDelete: Cascade)
+
+  @@index([viajeId])
+}
+
+// Incremento 2 (SWR-REG-001..005, SWR-DATA-004): un PDF de reglas por viaje.
+model ReglasViaje {
+  viajeId       String   @id @db.Uuid
+  transportador String
+  nombre        String
+  tamano        Int
+  datos         Bytes
+  actualizadoEn DateTime @default(now())
+  viaje         Viaje    @relation(fields: [viajeId], references: [id], onDelete: Cascade)
 }
 
 enum EstadoTarea {
@@ -45,14 +118,33 @@ enum EstadoTarea {
 }
 
 model Tarea {
-  id          String @id @default(uuid()) @db.Uuid
+  id          String      @id @default(uuid()) @db.Uuid
   descripcion String
   estado      EstadoTarea @default(pendiente)
-  viajeId     String @db.Uuid
-  viaje       Viaje @relation(fields: [viajeId], references: [id], onDelete: Restrict)
-  documentos DocumentoTarea[]
+  // Incremento 2 (SWR-CHK-008..013)
+  fechaLimite DateTime?   @db.Date
+  comentario  String?
+  responsable String?
+  recurrente  Boolean     @default(false)
+  orden       Int         @default(0)
+  viajeId     String      @db.Uuid
+  viaje       Viaje       @relation(fields: [viajeId], references: [id], onDelete: Restrict)
+  documentos  DocumentoTarea[]
+  subtareas   Subtarea[]
 
   @@index([viajeId])
+}
+
+// Incremento 2 (SWR-CHK-010, SWR-DATA-007): no cuenta para el progreso (SWR-SEG-017).
+model Subtarea {
+  id          String  @id @default(uuid()) @db.Uuid
+  tareaId     String  @db.Uuid
+  descripcion String
+  completa    Boolean @default(false)
+  creadoEn    DateTime @default(now())
+  tarea       Tarea   @relation(fields: [tareaId], references: [id], onDelete: Cascade)
+
+  @@index([tareaId])
 }
 
 enum TipoVigencia {
@@ -62,22 +154,42 @@ enum TipoVigencia {
 }
 
 model Documento {
-  id               String @id @default(uuid()) @db.Uuid
+  id               String       @id @default(uuid()) @db.Uuid
   identificacion   String
   vigencia         TipoVigencia
-  fechaVencimiento DateTime? @db.Date
-  mascotaId        String @db.Uuid
-  mascota          Mascota @relation(fields: [mascotaId], references: [id], onDelete: Restrict)
+  fechaVencimiento DateTime?    @db.Date
+  mascotaId        String       @db.Uuid
+  mascota          Mascota      @relation(fields: [mascotaId], references: [id], onDelete: Restrict)
   tareas           DocumentoTarea[]
+  archivos         ArchivoDocumento[]
 
   @@index([mascotaId])
 }
 
+// Incremento 2 (SWR-DOC-008..016, SWR-DATA-005): archivos con versiones.
+// Cada archivo lógico es un «grupo»; reemplazarlo crea una versión nueva y conserva las anteriores.
+model ArchivoDocumento {
+  id          String    @id @default(uuid()) @db.Uuid
+  documentoId String    @db.Uuid
+  grupoId     String    @db.Uuid
+  version     Int       @default(1)
+  activo      Boolean   @default(true)
+  nombre      String
+  tipo        String
+  tamano      Int
+  datos       Bytes
+  creadoEn    DateTime  @default(now())
+  documento   Documento @relation(fields: [documentoId], references: [id], onDelete: Cascade)
+
+  @@index([documentoId])
+  @@index([grupoId])
+}
+
 model DocumentoTarea {
-  documentoId String @db.Uuid
-  tareaId     String @db.Uuid
+  documentoId String    @db.Uuid
+  tareaId     String    @db.Uuid
   documento   Documento @relation(fields: [documentoId], references: [id], onDelete: Restrict)
-  tarea       Tarea @relation(fields: [tareaId], references: [id], onDelete: Restrict)
+  tarea       Tarea     @relation(fields: [tareaId], references: [id], onDelete: Restrict)
 
   @@id([documentoId, tareaId])
   @@index([tareaId])

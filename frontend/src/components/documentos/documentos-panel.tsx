@@ -8,10 +8,14 @@ import useResource from '@/hooks/use-resource';
 import {api} from '@/lib/api';
 import type {Documento,Tarea} from '@/lib/types';
 import DocumentoForm from './documento-form';
+import ArchivosDocumento from './archivos-documento';
+import {textoVigencia} from '@/lib/types';
 
 export default function DocumentosPanel({mascotaId,tareas,onLink}: {mascotaId:string;tareas:Tarea[];onLink:()=>void}){
   const docs=useResource<Documento[]>(`/mascotas/${mascotaId}/documentos`);
   const {token}=useAuth();
+  const [editing,setEditing]=useState<string|null>(null);
+  const [archivos,setArchivos]=useState<string|null>(null);
   const [busy,setBusy]=useState(false),[error,setError]=useState(''),[message,setMessage]=useState('');
   async function link(event:FormEvent<HTMLFormElement>){
     event.preventDefault();setError('');setMessage('');
@@ -29,7 +33,9 @@ export default function DocumentosPanel({mascotaId,tareas,onLink}: {mascotaId:st
     <ComponentCard title="Documentos de la mascota" className="xl:col-span-2" desc="Se evalúan únicamente los documentos vinculados a tareas de este viaje.">
       <ResourceState {...docs} retry={docs.reload}/>
       {docs.data&&!docs.data.length&&<p className="text-sm text-gray-600">Aún no hay documentos para esta mascota.</p>}
-      {!!docs.data?.length&&<ul aria-label="Documentos registrados" className="divide-y divide-gray-100">{docs.data.map(doc=><li key={doc.id} className="flex flex-wrap justify-between gap-2 py-3 text-sm"><span className="font-medium text-gray-800">{doc.identificacion}</span><span className="text-gray-600">{doc.vigencia==='fecha'?doc.fechaVencimiento?.slice(0,10):doc.vigencia==='sin_vencimiento'?'Sin vencimiento':'Vigencia desconocida'}</span></li>)}</ul>}
+      {!!docs.data?.length&&<ul aria-label="Documentos registrados" className="divide-y divide-gray-100">{docs.data.map(doc=><li key={doc.id} className="py-3 text-sm">{editing===doc.id
+      ?<DocumentoForm mascotaId={mascotaId} documento={doc} onCancel={()=>setEditing(null)} onSuccess={()=>{setEditing(null);docs.reload();onLink();}}/>
+      :<div className="flex flex-wrap items-center justify-between gap-2"><span className="font-medium text-gray-800">{doc.identificacion}</span><span className="flex items-center gap-3"><span className="text-gray-600">{doc.vigencia==='fecha'?doc.fechaVencimiento?.slice(0,10):textoVigencia(doc)}</span><Button type="button" variant="outline" size="xs" aria-label={`Editar documento ${doc.identificacion}`} onClick={()=>setEditing(doc.id)}>Editar</Button><Button type="button" variant="outline" size="xs" aria-expanded={archivos===doc.id} aria-label={`Archivos de ${doc.identificacion}`} onClick={()=>setArchivos(archivos===doc.id?null:doc.id)}>Archivos</Button></span></div>}{editing!==doc.id&&archivos===doc.id&&<div className="mt-3"><ArchivosDocumento documentoId={doc.id} identificacion={doc.identificacion}/></div>}</li>)}</ul>}
       {!!docs.data?.length&&!!tareas.length&&<form aria-label="Vincular documento" onSubmit={link} noValidate className="space-y-4 border-t border-gray-100 pt-5">
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-2"><label htmlFor="documentoId" className="block text-sm font-medium text-gray-700">Documento a vincular</label><select id="documentoId" name="documentoId" className={selectClass}><option value="">Selecciona un documento</option>{docs.data.map(doc=><option key={doc.id} value={doc.id}>{doc.identificacion}</option>)}</select></div>

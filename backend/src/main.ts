@@ -10,7 +10,7 @@ config({path: resolve(__dirname, '../.env'), quiet: true});
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, {logger: ['error', 'warn']});
-  app.enableCors({origin: process.env.FRONTEND_ORIGIN || 'http://127.0.0.1:3000', allowedHeaders: ['Content-Type','Authorization'], methods: ['GET','POST','PATCH','OPTIONS']});
+  app.enableCors({origin: process.env.FRONTEND_ORIGIN || 'http://127.0.0.1:3000', allowedHeaders: ['Content-Type','Authorization'], methods: ['GET','POST','PATCH','PUT','DELETE','OPTIONS']});
   app.useGlobalPipes(new ValidationPipe({whitelist: true, forbidNonWhitelisted: true, transform: true}));
   app.enableShutdownHooks();
   await app.listen(Number(process.env.PORT || 3001), '127.0.0.1');

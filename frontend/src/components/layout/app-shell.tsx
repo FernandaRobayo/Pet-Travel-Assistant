@@ -10,7 +10,7 @@ import {useAuth} from '@/components/auth/auth-provider';
 export default function AppShell({children}: {children: React.ReactNode}) {
   const auth = useAuth();
   const pathname = usePathname();
-  const items = [{href:'/mascotas',label:'Mascotas'},{href:'/viajes',label:'Viajes'}];
+  const items = [{href:'/mascotas',label:'Mascotas'},{href:'/viajes',label:'Viajes'},{href:'/documentos',label:'Documentos'},{href:'/cuenta',label:'Cuenta'}];
   return <SidebarProvider>
     <Sidebar collapsible="offcanvas">
       <SidebarHeader className="px-5 py-8"><Link href="/mascotas"><img src="/logo.svg" alt="Pet Travel Assistant" width="230" height="50"/></Link></SidebarHeader>

@@ -30,8 +30,8 @@ try{
  execute(process.execPath,['backend/scripts/prisma-command.mjs','deploy']);
  server(['backend/dist/main.js']);server(['node_modules/next/dist/bin/next','start','frontend','--hostname','127.0.0.1','--port','3000']);
  await Promise.all([ready('http://127.0.0.1:3001/auth/me',401),ready('http://127.0.0.1:3000/login',200)]);
- suite='unitarias';await runNode(['node_modules/vitest/vitest.mjs','run','--config','backend/vitest.config.ts']);results.unitarias='8/8';
- suite='rtl';await runNode(['node_modules/vitest/vitest.mjs','run','--config','frontend/vitest.config.ts']);results.rtl='12/12';
+ suite='unitarias';await runNode(['node_modules/vitest/vitest.mjs','run','--config','backend/vitest.config.ts']);results.unitarias='23/23';
+ suite='rtl';await runNode(['node_modules/vitest/vitest.mjs','run','--config','frontend/vitest.config.ts']);results.rtl='26/26';
  suite='postman';await runNode(['node_modules/newman/bin/newman.js','run','postman/Pet-Travel-Assistant.postman_collection.json','-e','postman/local.postman_environment.json']);results.postman='8/8 requests';
  suite='playwright';await runNode(['node_modules/@playwright/test/cli.js','test']);results.playwright='5/5';
 }catch(error){if(suite)results[suite]='Falló';console.error(clean(error.message));process.exitCode=1;}

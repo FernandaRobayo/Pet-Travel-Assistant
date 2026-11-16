@@ -2,7 +2,7 @@ export type EstadoTarea = 'pendiente' | 'completa' | 'requiere_revision';
 export type EstadoGeneral = 'Sin elementos' | 'Requiere revisión' | 'Con pendientes' | 'Checklist completo';
 export type Vigencia = 'fecha' | 'sin_vencimiento' | 'desconocida';
 export interface DocumentoDominio {id: string; identificacion: string; vigencia: Vigencia; fechaVencimiento: string | null}
-export interface TareaDominio {id: string; estado: EstadoTarea}
+export interface TareaDominio {id: string; estado: EstadoTarea; descripcion?: string}
 export interface Aviso {documentoId: string; identificacion: string; motivo: string}
 
 export function fechaCalendario(value: string): string {
@@ -42,15 +42,29 @@ export function validarVinculo(input: {usuarioDocumentoId: string; usuarioViajeI
   return 'valido';
 }
 
+export type Semaforo = 'rojo' | 'amarillo' | 'verde' | 'gris';
+export interface ElementoLista {tipo: 'pendiente' | 'revision' | 'advertencia'; texto: string; referenciaId: string}
+
+// SWR-SEG-019: rojo = Requiere revisión, amarillo = Con pendientes, verde = Checklist completo, gris = Sin elementos.
+export function semaforo(estado: EstadoGeneral): Semaforo {
+  if (estado === 'Requiere revisión') return 'rojo';
+  if (estado === 'Con pendientes') return 'amarillo';
+  if (estado === 'Checklist completo') return 'verde';
+  return 'gris';
+}
+
 export function calcularSeguimiento(input: {
   fechaSalida: string;
   tareas: readonly TareaDominio[];
   documentos: readonly DocumentoDominio[];
   vinculos: readonly {documentoId: string; tareaId: string}[];
+  hoy?: string;
 }) {
   const tareasIds = new Set(input.tareas.map(t => t.id));
   const documentosIds = new Set(input.vinculos.filter(v => tareasIds.has(v.tareaId)).map(v => v.documentoId));
   const advertencias: Aviso[] = [], revisiones: Aviso[] = [];
+  const hoy = input.hoy ? fechaCalendario(input.hoy) : null;
+  const porVencerLista: {documentoId: string; identificacion: string; fechaVencimiento: string; diasParaVencer: number}[] = [];
   // Supuesto: un aviso por documento aunque tenga varios vínculos al viaje.
   // No está definido en el alcance actual el tratamiento de avisos duplicados.
   const evaluados = new Set<string>();
@@ -61,13 +75,52 @@ export function calcularSeguimiento(input: {
     const base = {documentoId: documento.id, identificacion: documento.identificacion};
     if (result.advertencia) advertencias.push({...base, motivo: result.advertencia});
     if (result.revision) revisiones.push({...base, motivo: result.revision});
+    // SWR-SEG-015/020: documentos por vencer; solo informativo (SWR-SEG-016).
+    if (hoy && documento.vigencia === 'fecha' && documento.fechaVencimiento && porVencer(documento.fechaVencimiento, hoy)) {
+      porVencerLista.push({...base, fechaVencimiento: documento.fechaVencimiento, diasParaVencer: diasEntre(hoy, documento.fechaVencimiento)});
+    }
   }
+  const general = estadoGeneral(input.tareas, advertencias, revisiones);
+  const pendientes = input.tareas.filter(t => t.estado === 'pendiente').map(t => ({id: t.id, descripcion: t.descripcion ?? ''}));
+  const enRevision = input.tareas.filter(t => t.estado === 'requiere_revision').map(t => ({id: t.id, descripcion: t.descripcion ?? ''}));
+  const progreso = calcularProgreso(input.tareas);
+  const diasRestantes = hoy ? diasEntre(hoy, input.fechaSalida) : null;
+  const lista: ElementoLista[] = [
+    ...pendientes.map((t): ElementoLista => ({tipo: 'pendiente', texto: t.descripcion, referenciaId: t.id})),
+    ...enRevision.map((t): ElementoLista => ({tipo: 'revision', texto: t.descripcion, referenciaId: t.id})),
+    ...[...advertencias, ...revisiones].map((a): ElementoLista => ({tipo: 'advertencia', texto: `${a.identificacion}: ${a.motivo}`, referenciaId: a.documentoId}))
+  ];
   return {
-    progreso: calcularProgreso(input.tareas),
-    estadoGeneral: estadoGeneral(input.tareas, advertencias, revisiones),
+    progreso,
+    estadoGeneral: general,
     advertencias, revisiones,
     totalTareas: input.tareas.length,
     tareasCompletas: input.tareas.filter(t => t.estado === 'completa').length,
-    aviso: 'Checklist completo no significa autorización para viajar'
+    aviso: 'Checklist completo no significa autorización para viajar',
+    // Incremento 2 (SWR-SEG-001, 018, 019, 020, 021)
+    pendientes, enRevision, diasRestantes, semaforo: semaforo(general), porVencer: porVencerLista, lista,
+    resumen: {progreso, advertencias: advertencias.length + revisiones.length, porVencer: porVencerLista.length, diasRestantes}
   };
+}
+
+// Incremento extra (CC-03, SWR-SEG-015). La señal es solo informativa: no altera
+// el progreso ni el estado general (SWR-SEG-016).
+// Supuesto: período de anticipación de 30 días. No está definido en el alcance actual (DP-16).
+export const DIAS_ANTICIPACION_POR_VENCER = 30;
+
+export function diasEntre(desde: string, hasta: string): number {
+  const a = Date.parse(`${fechaCalendario(desde)}T00:00:00.000Z`);
+  const b = Date.parse(`${fechaCalendario(hasta)}T00:00:00.000Z`);
+  return Math.round((b - a) / 86400000);
+}
+
+export function porVencer(fechaVencimiento: string | null, hoy: string, dias: number = DIAS_ANTICIPACION_POR_VENCER): boolean {
+  if (!fechaVencimiento) return false;
+  const restantes = diasEntre(hoy, fechaVencimiento);
+  return restantes >= 0 && restantes <= dias;
+}
+
+// Supuesto: «hoy» es la fecha de calendario de Colombia (America/Bogota).
+export function fechaHoy(ahora: Date = new Date()): string {
+  return ahora.toLocaleDateString('en-CA', {timeZone: 'America/Bogota'});
 }

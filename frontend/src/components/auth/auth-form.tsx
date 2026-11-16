@@ -14,6 +14,7 @@ export default function AuthForm({register = false}: {register?: boolean}) {
   const [busy, setBusy] = useState(false);
   const [errors, setErrors] = useState<Record<string,string>>({});
   const [message, setMessage] = useState('');
+  const [codigo, setCodigo] = useState('');
   useEffect(() => { if (auth.usuario) router.replace('/mascotas'); }, [auth.usuario, router]);
 
   async function submit(event: FormEvent<HTMLFormElement>) {
@@ -30,7 +31,8 @@ export default function AuthForm({register = false}: {register?: boolean}) {
     setBusy(true);
     try {
       if (register) {
-        await api('/auth/register', null, {method: 'POST', body: JSON.stringify({correo, contrasena})});
+        const result = await api<{codigoRecuperacion?: string}>('/auth/register', null, {method: 'POST', body: JSON.stringify({correo, contrasena})});
+        setCodigo(result?.codigoRecuperacion ?? '');
         setMessage('Cuenta creada. Ya puedes iniciar sesión.');
       } else {
         await auth.login(correo, contrasena); router.replace('/mascotas');
@@ -50,8 +52,10 @@ export default function AuthForm({register = false}: {register?: boolean}) {
         <p className="text-xs text-gray-600">Entre 8 caracteres y 72 bytes.</p>
         {errors.general && <p role="alert" className="text-sm text-red-700">{errors.general}</p>}
         {message && <p role="status" className="rounded-lg bg-brand-50 p-3 text-sm text-brand-700">{message} <Link href="/login" className="underline">Iniciar sesión</Link></p>}
+        {codigo && <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-gray-800"><p className="font-medium">Guarda tu código de recuperación</p><p className="my-2 break-all font-mono text-base tracking-wider" aria-label="Código de recuperación">{codigo}</p><p>Se muestra una sola vez. Lo necesitarás para restablecer tu contraseña.</p></div>}
         <Button type="submit" disabled={busy} className="w-full">{busy?'Procesando…':register?'Registrar cuenta':'Ingresar'}</Button>
       </form>
+      {!register && <p className="mt-4 text-sm"><Link className="font-medium text-brand-700 underline" href="/recuperar">¿Olvidaste tu contraseña?</Link></p>}
       <p className="mt-6 text-sm text-gray-600">{register?'¿Ya tienes cuenta?':'¿Primera vez?'}{' '}<Link className="font-medium text-brand-700 underline" href={register?'/login':'/register'}>{register?'Iniciar sesión':'Crear cuenta'}</Link></p>
     </section>
   </div>;
