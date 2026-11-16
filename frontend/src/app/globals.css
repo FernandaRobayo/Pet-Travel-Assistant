@@ -807,3 +807,5 @@ pre[class*="language-"].line-numbers {
     min-width: 580px;
   }
 }
+
+@keyframes fadeIn { from { opacity: 0; transform: translateY(8px) scale(.98); } to { opacity: 1; transform: none; } }

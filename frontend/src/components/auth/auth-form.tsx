@@ -5,6 +5,8 @@ import Link from 'next/link';
 import {useRouter} from 'next/navigation';
 import {Button} from '@/components/ui/button';
 import FormField from '@/components/forms/form-field';
+import PasswordField from '@/components/forms/password-field';
+import AuthShell from './auth-shell';
 import {useAuth} from './auth-provider';
 import {api} from '@/lib/api';
 
@@ -40,15 +42,15 @@ export default function AuthForm({register = false}: {register?: boolean}) {
     } catch (error) { setErrors({general: error instanceof Error ? error.message : 'No se pudo completar la operación.'}); }
     finally { setBusy(false); }
   }
-  return <div className="flex min-h-svh items-center justify-center p-6">
-    <section className="w-full max-w-md rounded-2xl border border-gray-200 bg-white p-8 shadow-theme-sm">
+  return <AuthShell>
+    <section className="w-full max-w-md rounded-2xl border border-gray-200 bg-white p-6 shadow-theme-md sm:p-8">
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img src="/logo.svg" alt="Pet Travel Assistant" width="220" height="48" className="mb-10"/>
       <h1 className="mb-2 text-heading-six font-semibold text-gray-800">{register ? 'Crear cuenta' : 'Iniciar sesión'}</h1>
       <p className="mb-8 text-sm text-gray-600">Organiza la preparación de tus viajes con mascota.</p>
       <form onSubmit={submit} noValidate className="space-y-5" aria-label={register?'Registro':'Inicio de sesión'}>
-        <FormField id="correo" name="correo" label="Correo" type="email" autoComplete="email" maxLength={254} error={errors.correo} required/>
-        <FormField id="contrasena" name="contrasena" label="Contraseña" type="password" autoComplete={register?'new-password':'current-password'} error={errors.contrasena} required/>
+        <FormField id="correo" name="correo" label="Correo" type="email" autoComplete="off" maxLength={254} error={errors.correo} required/>
+        <PasswordField id="contrasena" name="contrasena" label="Contraseña" autoComplete="new-password" error={errors.contrasena} medidor={register} required/>
         <p className="text-xs text-gray-600">Entre 8 caracteres y 72 bytes.</p>
         {errors.general && <p role="alert" className="text-sm text-red-700">{errors.general}</p>}
         {message && <p role="status" className="rounded-lg bg-brand-50 p-3 text-sm text-brand-700">{message} <Link href="/login" className="underline">Iniciar sesión</Link></p>}
@@ -58,5 +60,5 @@ export default function AuthForm({register = false}: {register?: boolean}) {
       {!register && <p className="mt-4 text-sm"><Link className="font-medium text-brand-700 underline" href="/recuperar">¿Olvidaste tu contraseña?</Link></p>}
       <p className="mt-6 text-sm text-gray-600">{register?'¿Ya tienes cuenta?':'¿Primera vez?'}{' '}<Link className="font-medium text-brand-700 underline" href={register?'/login':'/register'}>{register?'Iniciar sesión':'Crear cuenta'}</Link></p>
     </section>
-  </div>;
+  </AuthShell>;
 }

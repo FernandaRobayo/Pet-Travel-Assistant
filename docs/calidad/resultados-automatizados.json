@@ -1,7 +1,7 @@
 {
   "database": "PostgreSQL 16 efímero; no Supabase",
-  "unitarias": "Pendiente",
-  "rtl": "Pendiente",
-  "postman": "Pendiente",
-  "playwright": "Pendiente"
+  "unitarias": "23/23",
+  "rtl": "26/26",
+  "postman": "8/8 requests",
+  "playwright": "5/5"
 }
