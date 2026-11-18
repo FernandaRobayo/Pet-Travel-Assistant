@@ -23,10 +23,12 @@ async function task(page:Page){
  await page.getByLabel('Estado de tarea Verificar documentos').selectOption('completa');await expect(page.getByRole('status').filter({hasText:'Checklist completo'})).toBeVisible();
 }
 async function document(page:Page,fecha:string){
+ await page.getByRole('link',{name:'Gestionar documentos',exact:true}).click();await expect(page.getByRole('heading',{level:1,name:/^Documentos de /})).toBeVisible();
  await page.getByLabel('Identificación del documento').fill('Certificado');await page.getByLabel('Fecha de vencimiento').fill(fecha);await page.getByRole('button',{name:'Guardar documento'}).click();
  await expect(page.getByText('Documento registrado. Vincúlalo a una tarea para evaluarlo.',{exact:true})).toBeVisible();
  await page.getByLabel('Documento a vincular').selectOption({label:'Certificado'});await page.getByLabel('Tarea a vincular').selectOption({label:'Verificar documentos'});await page.getByRole('button',{name:'Vincular documento',exact:true}).click();
  await expect(page.getByText('Documento vinculado. El seguimiento se actualizó.',{exact:true})).toBeVisible();
+ await page.getByRole('link',{name:'← Volver al checklist'}).click();
 }
 
 test('E01 ACC-003: ruta protegida sin sesión vuelve a login',async({page})=>{
