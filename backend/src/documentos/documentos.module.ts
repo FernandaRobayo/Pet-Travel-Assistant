@@ -22,6 +22,7 @@ class DocumentosController {
   subir(@Req() request: AuthRequest, @Param('id', ParseUUIDPipe) id: string, @UploadedFile() archivo: ArchivoSubido | undefined) {return this.service.subirArchivo(request.usuarioId, id, archivo);}
   @Post('archivos/:id/reemplazo') @UseInterceptors(SUBIDA)
   reemplazar(@Req() request: AuthRequest, @Param('id', ParseUUIDPipe) id: string, @UploadedFile() archivo: ArchivoSubido | undefined) {return this.service.reemplazarArchivo(request.usuarioId, id, archivo);}
+  @Delete('archivos/:id') eliminar(@Req() request: AuthRequest, @Param('id', ParseUUIDPipe) id: string) {return this.service.eliminarArchivo(request.usuarioId, id);}
   @Get('archivos/:id/versiones') versiones(@Req() request: AuthRequest, @Param('id', ParseUUIDPipe) id: string) {return this.service.versiones(request.usuarioId, id);}
   @Get('archivos/:id/contenido')
   async contenido(@Req() request: AuthRequest, @Param('id', ParseUUIDPipe) id: string, @Res({passthrough: true}) res: Response) {

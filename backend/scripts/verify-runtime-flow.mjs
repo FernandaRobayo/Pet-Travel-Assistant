@@ -16,6 +16,7 @@ const contrasena=randomBytes(24).toString('hex');
 const report={incremento2:'No ejecutado',source:'DATABASE_URL',connected:false,apiConnected:false,flowCompleted:false,createdTestAccount:false,cleanup:'No necesaria: no se crearon datos.'};
 let api,usuarioId,mayHaveCreated=false,apiLogs='';
 async function freePort(){return await new Promise((ok,fail)=>{const server=createServer();server.on('error',fail);server.listen(0,'127.0.0.1',()=>{const port=server.address().port;server.close(()=>ok(port));});});}
+let ultimoPaso='';
 try{
  if(!process.env.DATABASE_URL)throw new Error('DATABASE_URL no está configurada.');
  client=new PrismaClient({datasourceUrl:process.env.DATABASE_URL,log:[]});
@@ -32,6 +33,7 @@ try{
  }
  if(!report.apiConnected)throw new Error('La API no estuvo disponible dentro del tiempo de comprobación.');
  async function call(path,method='GET',body,token,expected=200){
+  ultimoPaso=method+' '+path.replace(/[0-9a-f-]{36}/g,':id');
   const response=await fetch(base+path,{method,headers:{'Content-Type':'application/json',...(token?{Authorization:'Bearer '+token}:{})},body:body?JSON.stringify(body):undefined,signal:AbortSignal.timeout(15000)});
   const data=await response.json();
   if(response.status!==expected)throw new Error(`Recorrido detenido en ${method} ${path}: HTTP ${response.status}.`);
@@ -61,6 +63,7 @@ try{
  const fail=(texto)=>{throw new Error('Incremento 2: '+texto);};
  const ok=(condicion,texto)=>{if(!condicion)fail(texto);};
  async function form(path,campos,archivo,token,expected=201,method='POST'){
+  ultimoPaso=method+' '+path.replace(/[0-9a-f-]{36}/g,':id');
   const body=new FormData();for(const [k,v] of Object.entries(campos))body.append(k,v);
   if(archivo)body.append('archivo',new Blob([archivo.datos],{type:archivo.tipo}),archivo.nombre);
   const response=await fetch(base+path,{method,headers:token?{Authorization:'Bearer '+token}:{},body,signal:AbortSignal.timeout(20000)});
@@ -69,6 +72,7 @@ try{
   return data;
  }
  async function raw(path,token,expected=200){
+  ultimoPaso='GET '+path.replace(/[0-9a-f-]{36}/g,':id');
   const response=await fetch(base+path,{headers:token?{Authorization:'Bearer '+token}:{},signal:AbortSignal.timeout(20000)});
   if(response.status!==expected)fail(`GET ${path} devolvió HTTP ${response.status} (se esperaba ${expected}).`);
   return {tipo:response.headers.get('content-type')||'',bytes:Buffer.from(await response.arrayBuffer())};
@@ -118,6 +122,11 @@ try{
  ok((await call(`/documentos/${unico.id}/archivos`,'GET',undefined,A)).length===0,'Un documento sin archivo debería listar cero archivos.');
  const proximo=await call('/documentos/proximo-viaje','GET',undefined,A);
  ok(proximo.viaje?.id===trip.id&&proximo.documentos.some(d=>d.id===doc.id&&d.vinculado&&d.archivos===2),'La vista de documentos del próximo viaje no coincide.');
+ const temporal=await form(`/documentos/${doc.id}/archivos`,{},{datos:png,tipo:'image/png',nombre:'equivocado.png'},A);
+ ok((await call(`/documentos/${doc.id}/archivos`,'GET',undefined,A)).length===3,'El archivo temporal no quedó en la lista.');
+ await call(`/archivos/${temporal.id}`,'DELETE',undefined,A);
+ ok((await call(`/documentos/${doc.id}/archivos`,'GET',undefined,A)).length===2,'Eliminar el archivo no lo quitó de la lista.');
+ await raw(`/archivos/${temporal.id}/contenido`,A,404);
  // CHK-006..014
  const conPlantilla=await call(`/viajes/${trip.id}/tareas/plantilla`,'POST',{plantillaId:'avion'},A,201);
  ok(conPlantilla.length>=7&&conPlantilla.every(t=>t.estado==='pendiente'||t.id===task.id),'La plantilla no creó tareas pendientes.');
@@ -171,7 +180,7 @@ try{
   ['PATCH',`/subtareas/${sub2.id}`,404,{completa:true}],['DELETE',`/subtareas/${sub2.id}`,404],
   ['PATCH',`/mascotas/${pet.id}`,404,{nombre:'x'}],['GET',`/mascotas/${pet.id}/foto`,404],['GET',`/mascotas/${pet.id}/documentos`,404],
   ['PATCH',`/documentos/${doc.id}`,404,{identificacion:'x',vigencia:'desconocida'}],['GET',`/documentos/${doc.id}/archivos`,404],
-  ['GET',`/archivos/${archivo1.id}/contenido`,404],['GET',`/archivos/${archivo1.id}/versiones`,404],['GET',`/viajes/${trip.id}/reglas`,404]
+  ['GET',`/archivos/${archivo1.id}/contenido`,404],['DELETE',`/archivos/${archivo1.id}`,404],['GET',`/archivos/${archivo1.id}/versiones`,404],['GET',`/viajes/${trip.id}/reglas`,404]
  ];
  for(const [metodo,ruta,esperado,cuerpo] of intentos){
   const response=await fetch(base+ruta,{method:metodo,headers:{'Content-Type':'application/json',Authorization:'Bearer '+B},body:cuerpo?JSON.stringify(cuerpo):undefined,signal:AbortSignal.timeout(15000)});
@@ -183,7 +192,7 @@ try{
  await form(`/mascotas/${pet.id}/foto`,{},{datos:png,tipo:'image/png',nombre:'ajena.png'},B,404);
  ok((await call('/documentos/proximo-viaje','GET',undefined,B)).viaje===null,'La otra cuenta ve documentos ajenos.');
  report.incremento2=`Completado: ${intentos.length+4} intentos de acceso ajeno bloqueados; ficha, foto, viaje, tramos, reglas PDF, archivos versionados, plantilla, subtareas, orden, recurrentes, PDF, seguimiento ampliado y recuperación verificados.`;
-}catch(error){report.error=safeError(error);process.exitCode=1;}
+}catch(error){report.error=safeError(error);report.ultimoPaso=ultimoPaso;process.exitCode=1;}
 finally{
  if(mayHaveCreated){
   try{

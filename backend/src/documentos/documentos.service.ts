@@ -61,7 +61,7 @@ export class DocumentosService {
     return documento;
   }
   private async archivoPropio(usuarioId: string, id: string) {
-    const archivo = await this.prisma.archivoDocumento.findFirst({where: {id, documento: {mascota: {usuarioId}}}, select: {id: true, documentoId: true, grupoId: true}});
+    const archivo = await this.prisma.archivoDocumento.findFirst({where: {id, documento: {mascota: {usuarioId}}}, select: {id: true, documentoId: true, grupoId: true, activo: true}});
     if (!archivo) throw new NotFoundException('Archivo no encontrado.');
     return archivo;
   }
@@ -95,6 +95,17 @@ export class DocumentosService {
     return nuevo;
   }
   // SWR-DOC-016
+  // Elimina una versión (p. ej. si se subió un archivo equivocado). Si era la vigente, la versión anterior pasa a ser la vigente.
+  async eliminarArchivo(usuarioId: string, archivoId: string) {
+    const actual = await this.archivoPropio(usuarioId, archivoId);
+    await this.prisma.archivoDocumento.delete({where: {id: actual.id}});
+    if (actual.activo) {
+      const anterior = await this.prisma.archivoDocumento.findFirst({where: {grupoId: actual.grupoId}, orderBy: {version: 'desc'}, select: {id: true}});
+      if (anterior) await this.prisma.archivoDocumento.update({where: {id: anterior.id}, data: {activo: true}});
+    }
+    return {eliminado: true};
+  }
+
   async versiones(usuarioId: string, archivoId: string) {
     const actual = await this.archivoPropio(usuarioId, archivoId);
     return this.prisma.archivoDocumento.findMany({where: {grupoId: actual.grupoId}, select: DocumentosService.META, orderBy: {version: 'desc'}});
