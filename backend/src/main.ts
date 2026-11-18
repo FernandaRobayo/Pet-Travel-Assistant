@@ -15,4 +15,10 @@ async function bootstrap() {
   app.enableShutdownHooks();
   await app.listen(Number(process.env.PORT || 3001), '127.0.0.1');
 }
-bootstrap().catch(() => { console.error('No se pudo iniciar la API. Revisa la configuración y la conexión PostgreSQL.'); process.exitCode = 1; });
+bootstrap().catch((error: unknown) => {
+  console.error('No se pudo iniciar la API. Revisa la configuración y la conexión PostgreSQL.');
+  // Causa técnica sin credenciales: se oculta cualquier URL de conexión.
+  const causa = error instanceof Error ? `${error.name}${(error as {code?: string}).code ? ` (${(error as {code?: string}).code})` : ''}: ${error.message}` : String(error);
+  console.error('Causa:', causa.replace(/[a-z]+:\/\/\S+/gi, '[url oculta]').split('\n').filter(Boolean).slice(0, 4).join(' | '));
+  process.exitCode = 1;
+});
